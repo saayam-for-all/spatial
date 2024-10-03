@@ -1,3 +1,4 @@
+"""
 import os
 
 class Config:
@@ -9,3 +10,7 @@ class DevConfig(Config):
 
 class ProdConfig(Config):
     DEBUG = False
+"""
+
+SQLALCHEMY_DATABASE_URI = 'sqlite:///locations.db'
+SQLALCHEMY_TRACK_MODIFICATIONS = False
