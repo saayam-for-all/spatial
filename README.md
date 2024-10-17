@@ -50,7 +50,69 @@ This Flask-based microservice captures and stores geographical spatial data (lat
         set FLASK_APP=app
         flask run
 
-6.	Sending a Request:
-    ```bash
-    curl -X POST http://127.0.0.1:5000/location -H "Content-Type: application/json" \
-    -d '{"latitude": "40.7128", "longitude": "-74.0060", "city": "New York", "country": "USA"}'
+6.	Sending a Request (assuming that our server is running at localhost):
+   
+      •	Capture Location (with address):
+  	
+            Method: POST
+  	
+            URL: http://<localhost>/location
+  	
+            Headers:
+               Key: Content-Type
+               Value: application/json
+            
+            Body (raw JSON sample example):
+               {
+                   "user_id": 1,
+                   "address": "1600 Amphitheatre Parkway, Mountain View, CA"
+               }
+      
+   
+      •	Capture Location (using current location):
+  	
+            Method: POST
+  	
+            URL: http://<localhost>/location
+  	
+            Headers:
+               Key: Content-Type
+               Value: application/json
+            
+            Body (raw JSON sample example):
+               {
+                   "user_id": 2,
+                   "use_current_location": true
+               }
+            
+   
+      •	 Capture Location (no address provided, will use IP):
+
+            Method: POST
+  	
+            URL: http://<localhost>/location
+  	
+            Headers:
+               Key: Content-Type
+               Value: application/json
+            
+            Body (raw JSON sample example):
+               {
+                   "user_id": 3
+               }
+
+
+8. Get User Location:
+   
+         Method: GET
+      
+         URL: http://<localhost>/user_location/<user_id>
+   
+         Sample output (for user_id = 1):
+            {
+              "user_id": 1,
+              "latitude": 37.4220,
+              "longitude": -122.0841,
+              "timestamp": "2023-05-20T15:30:45.123456"
+            }
+      
