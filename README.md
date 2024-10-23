@@ -122,7 +122,7 @@ This Flask-based microservice captures and stores geographical spatial data (lat
                   "longitude": <longitude value>,
                   "limit": <limit on total numbers of volunteers to match>
                   "min_radius": <minimum radius in KM>,
-                  "max_radius": <maximum radisu in KM>,
+                  "max_radius": <maximum radius in KM>,
                   "exception_id": <user id which we should not process>
                }
 
