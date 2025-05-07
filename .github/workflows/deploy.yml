@@ -1,0 +1,147 @@
+name: Deploy Lambda to AWS
+
+# Trigger this workflow on push, PR, or manual invocation
+on:
+  push:
+    branches: [ main, dev test ]
+  pull_request:
+    branches: [ main, dev test ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build and Deploy Lambda
+    runs-on: ubuntu-latest
+
+    # These are common across environments unless overridden
+    env:
+      HANDLER_FILE: find_nearest_volunteers.py
+      PYTHON_VERSION: "3.9"
+
+    steps:
+    # Step 1: Checkout code from the triggering branch
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    # Step 2: Dynamically set environment based on branch name
+    - name: Set AWS and DB credentials by branch
+      id: set-env
+      run: |
+        BRANCH_NAME="${GITHUB_REF##*/}"  # Get the branch name (e.g., 'main', 'dev')
+        echo "Deploying from branch: $BRANCH_NAME"
+
+        if [ "$BRANCH_NAME" = "main" ]; then
+          # AWS for production
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID_MAIN }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY_MAIN }}" >> $GITHUB_ENV
+          echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
+          echo "FUNCTION_NAME=saayam-prod-geo-spatial-lambda" >> $GITHUB_ENV
+          echo "DEPLOY=true" >> $GITHUB_ENV
+
+          # DB for production
+          echo "DB_HOST=${{ secrets.DB_HOST_MAIN }}" >> $GITHUB_ENV
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> $GITHUB_ENV
+          echo "DB_NAME=${{ secrets.DB_NAME_MAIN }}" >> $GITHUB_ENV
+          echo "DB_USER=${{ secrets.DB_USER_MAIN }}" >> $GITHUB_ENV
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD_MAIN }}" >> $GITHUB_ENV
+
+        elif [ "$BRANCH_NAME" = "dev" ]; then
+          # AWS for dev/staging
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID_DEV }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}" >> $GITHUB_ENV
+          echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
+          echo "FUNCTION_NAME=saayam-dev-geo-spatial-lambda" >> $GITHUB_ENV
+          echo "DEPLOY=true" >> $GITHUB_ENV
+
+          # DB for dev
+          echo "DB_HOST=${{ secrets.DB_HOST_DEV }}" >> $GITHUB_ENV
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> $GITHUB_ENV
+          echo "DB_NAME=${{ secrets.DB_NAME_DEV }}" >> $GITHUB_ENV
+          echo "DB_USER=${{ secrets.DB_USER_DEV }}" >> $GITHUB_ENV
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD_DEV }}" >> $GITHUB_ENV
+
+        elif [ "$BRANCH_NAME" = "test" ]; then
+          # AWS for test
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID_DEV }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}" >> $GITHUB_ENV
+          echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
+          echo "FUNCTION_NAME=saayam-dev-geo-spatial-lambda" >> $GITHUB_ENV
+          echo "DEPLOY=true" >> $GITHUB_ENV
+
+          # DB for test
+          echo "DB_HOST=${{ secrets.DB_HOST_TEST }}" >> $GITHUB_ENV
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> $GITHUB_ENV
+          echo "DB_NAME=${{ secrets.DB_NAME_TEST }}" >> $GITHUB_ENV
+          echo "DB_USER=${{ secrets.DB_USER_TEST }}" >> $GITHUB_ENV
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD_TEST }}" >> $GITHUB_ENV
+
+        else
+          echo "DEPLOY=false" >> $GITHUB_ENV
+        fi
+
+    # Step 3: Exit early for unsupported branches
+    - name: Stop if branch is not deployable
+      if: env.DEPLOY == 'false'
+      run: echo "Branch not supported for deployment. Skipping."
+
+    # Step 4: Build the deployment package in Amazon Linux to ensure binary compatibility
+    - name: Build Lambda deployment package with Docker
+      if: env.DEPLOY == 'true'
+      run: |
+        mkdir lambda_build
+        cp *.py lambda_build/
+        
+        docker run --rm -v "$PWD/lambda_build":/app amazonlinux:2023 /bin/bash -c "
+          yum install -y gcc python3 python3-devel postgresql-devel zip &&
+          python3 -m ensurepip --upgrade &&
+          pip3 install --upgrade pip &&
+          pip3 install psycopg2-binary s2sphere -t /app &&
+          cd /app &&
+          zip -r9 lambda.zip .
+        "
+
+    # Step 5: Confirm the contents of the build directory
+    - name: List contents of lambda_build
+      if: env.DEPLOY == 'true'
+      run: ls -lh lambda_build
+
+    # Step 6: Configure AWS credentials from environment variables
+    - name: Configure AWS credentials
+      if: env.DEPLOY == 'true'
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    # Step 7: Upload new Lambda function code
+    - name: Deploy Lambda Code
+      if: env.DEPLOY == 'true'
+      run: |
+        aws lambda update-function-code \
+          --function-name "$FUNCTION_NAME" \
+          --zip-file fileb://lambda_build/lambda.zip
+
+    # Step 8: Update the Lambda function handler if needed
+    - name: Update Lambda Handler
+      if: env.DEPLOY == 'true'
+      run: |
+        sleep 10
+        aws lambda update-function-configuration \
+          --function-name "$FUNCTION_NAME" \
+          --handler "${HANDLER_FILE%.py}.lambda_handler"
+
+    # Step 9: Inject environment variables (DB credentials)
+    - name: Update Environment Variables
+      if: env.DEPLOY == 'true'
+      run: |
+        sleep 10
+        aws lambda update-function-configuration \
+          --function-name "$FUNCTION_NAME" \
+          --environment "Variables={
+            DB_HOST='${{ env.DB_HOST }}',
+            DB_PORT='${{ env.DB_PORT }}',
+            DB_NAME='${{ env.DB_NAME }}',
+            DB_USER='${{ env.DB_USER }}',
+            DB_PASSWORD='${{ env.DB_PASSWORD }}'
+          }"
