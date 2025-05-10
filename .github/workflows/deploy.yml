@@ -35,7 +35,7 @@ jobs:
           echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID_MAIN }}" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY_MAIN }}" >> $GITHUB_ENV
           echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
-          echo "FUNCTION_NAME=saayam-prod-geo-spatial-lambda" >> $GITHUB_ENV
+          echo "FUNCTION_NAME=saayam-geo-spatial-lambda" >> $GITHUB_ENV
           echo "DEPLOY=true" >> $GITHUB_ENV
 
           # DB for production
@@ -50,7 +50,7 @@ jobs:
           echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID_DEV }}" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}" >> $GITHUB_ENV
           echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
-          echo "FUNCTION_NAME=saayam-dev-geo-spatial-lambda" >> $GITHUB_ENV
+          echo "FUNCTION_NAME=saayam-geo-spatial-lambda" >> $GITHUB_ENV
           echo "DEPLOY=true" >> $GITHUB_ENV
 
           # DB for dev
@@ -65,7 +65,7 @@ jobs:
           echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID_DEV }}" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}" >> $GITHUB_ENV
           echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
-          echo "FUNCTION_NAME=saayam-test-geo-spatial-lambda" >> $GITHUB_ENV
+          echo "FUNCTION_NAME=saayam-geo-spatial-lambda" >> $GITHUB_ENV
           echo "DEPLOY=true" >> $GITHUB_ENV
 
           # DB for test
