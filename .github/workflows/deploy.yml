@@ -3,9 +3,9 @@ name: Deploy Lambda to AWS
 # Trigger this workflow on push, PR, or manual invocation
 on:
   push:
-    branches: [ main, dev test ]
+    branches: [ main, dev, test, lambda-ci-test-sudarshan ]
   pull_request:
-    branches: [ main, dev test ]
+    branches: [ main, dev, test, lambda-ci-test-sudarshan ]
   workflow_dispatch:
 
 jobs:
