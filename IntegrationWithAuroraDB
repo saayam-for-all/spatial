@@ -1,0 +1,32 @@
+import psycopg2
+
+db_config = {
+    "host": "TBD",
+    "port": 5432,
+    "database": "TBD",
+    "user": "TBD",
+    "password": "TBD"
+}
+
+
+try:
+    connection = psycopg2.connect(**db_config)
+    cursor = connection.cursor()
+
+    # Example update
+    update_query = """
+        TBD;
+    """
+    cursor.execute(update_query)
+    connection.commit()
+
+    print("✅ Update successful")
+
+except Exception as e:
+    print("❌ Error:", e)
+
+finally:
+    if cursor:
+        cursor.close()
+    if connection:
+        connection.close()
