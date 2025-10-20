@@ -247,3 +247,29 @@ def update_volunteer_availability(user_id, availability):
         return {"id": user_id, "availability": availability}
     else:
         return {"error": "Volunteer not found"}
+   
+def lambda_handler(event, context):
+    """
+    AWS Lambda entry point for finding nearest volunteers.
+    """
+    import json
+
+    try:
+        body = event.get("body")
+        if isinstance(body, str):
+            body = json.loads(body)
+    except Exception:
+        body = event
+
+    lat = float(body.get("latitude"))
+    lon = float(body.get("longitude"))
+    limit = int(body.get("limit", 5))
+
+    # Call your existing function
+    results = find_nearest_volunteers(lat, lon, limit)
+
+    return {
+        "statusCode": 200,
+        "body": json.dumps({"volunteers": results}),
+        "headers": {"Content-Type": "application/json"},
+    }
