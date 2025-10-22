@@ -1,10 +1,6 @@
 # Database configuration
 db_config = {
-    "host": "saayam-dev-rds.cdqs8g6owlt0.us-east-1.rds.amazonaws.com",
-    "port": 5432,
-    "database": "virginia_dev_saayam_rdbms",
-    "user": "spatial_user",
-    "password": "Saayam#123"
+    TBD
 }
 
 # Tile system configuration
