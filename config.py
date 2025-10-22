@@ -1,6 +1,7 @@
 # Database configuration
-SQLALCHEMY_DATABASE_URI = 'sqlite:///locations.db'
-SQLALCHEMY_TRACK_MODIFICATIONS = False
+db_config = {
+    TBD
+}
 
 # Tile system configuration
 EARTH_RADIUS_KM = 6371  # Earth's radius in kilometers
