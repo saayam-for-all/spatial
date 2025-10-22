@@ -1,6 +1,11 @@
 # Database configuration
-SQLALCHEMY_DATABASE_URI = 'sqlite:///locations.db'
-SQLALCHEMY_TRACK_MODIFICATIONS = False
+db_config = {
+    "host": "saayam-dev-rds.cdqs8g6owlt0.us-east-1.rds.amazonaws.com",
+    "port": 5432,
+    "database": "virginia_dev_saayam_rdbms",
+    "user": "spatial_user",
+    "password": "Saayam#123"
+}
 
 # Tile system configuration
 EARTH_RADIUS_KM = 6371  # Earth's radius in kilometers
