@@ -48,13 +48,11 @@ def process_location_data(user_id, lat, lon, timestamp):
     }
 
 
-def get_location_by_address(ip, address):
+def get_location_by_address(address):
     """
     Convert address to coordinates using Nominatim API.
-    Falls back to IP-based location on failure.
     
     Args:
-        ip: User's IP address for fallback
         address: Physical address to geocode
         
     Returns:
@@ -71,35 +69,9 @@ def get_location_by_address(ip, address):
             return float(data[0]['lat']), float(data[0]['lon']), datetime.now(timezone.utc)
         else:
             print(f"No results found for address: {address}")
-            print(f"Falling back to ip: {ip}")
-            return get_location_by_ip(ip)
+            return None, None, None
             
     except (requests.exceptions.RequestException, KeyError, ValueError, 
             IndexError, TypeError, AttributeError) as e:
         print(f"Error with location data: {e}")
-        print(f"Falling back to ip: {ip}")
-        return get_location_by_ip(ip)
-
-
-def get_location_by_ip(ip):
-    """
-    Get location coordinates from IP address using ipapi.co.
-    
-    Args:
-        ip: IP address to lookup
-        
-    Returns:
-        tuple: (latitude, longitude, timestamp) or (None, None, None) on failure
-    """
-    
-    url = f"https://ipapi.co/{ip}/json/"
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
-        return float(data['latitude']), float(data['longitude']), datetime.now(timezone.utc)
-      
-    except (requests.exceptions.RequestException, KeyError, ValueError, 
-            TypeError, AttributeError) as e:
-        print(f"Error with IP location data: {e}")
         return None, None, None
