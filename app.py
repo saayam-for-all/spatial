@@ -28,7 +28,7 @@ def update_Volunteer_Location():
         address = data.get('address')
         use_current_location = data.get('use_current_location', False)
         
-        lat, lon, timestamp = get_location_by_address(request.remote_addr, address)
+        lat, lon, timestamp = get_location_by_address(address)
 
         if lat is None or lon is None:
             return jsonify({"error": "Unable to determine location"}), 400
