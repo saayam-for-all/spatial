@@ -2,8 +2,7 @@ from flask import Flask, request, jsonify
 import config
 from location import (
     process_location_data,
-    get_location_by_address,
-    get_location_by_ip
+    get_location_by_address
 )
 
 import psycopg2
@@ -28,12 +27,8 @@ def update_Volunteer_Location():
         user_id = data.get('user_id')
         address = data.get('address')
         use_current_location = data.get('use_current_location', False)
-
-        # Determine location based on input preferences
-        if use_current_location:
-            lat, lon, timestamp = get_location_by_ip(request.remote_addr)
-        else:
-            lat, lon, timestamp = get_location_by_address(request.remote_addr, address)
+        
+        lat, lon, timestamp = get_location_by_address(address)
 
         if lat is None or lon is None:
             return jsonify({"error": "Unable to determine location"}), 400
