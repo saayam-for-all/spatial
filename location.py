@@ -3,6 +3,7 @@ import psycopg2.extras
 from datetime import datetime, timezone
 import config
 from util import get_location_by_ip, get_location_by_address
+import os # Import os to read the file
 
 # --- Database Connection Helper ---
 
@@ -16,24 +17,33 @@ def get_db_connection():
         password=config.DB_PASSWORD
     )
 
+# --- SQL Query Loader ---
+def load_sql_query(file_name):
+    """Loads a SQL query from the 'sql' directory."""
+    # Gets the path to the directory this file is in
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    sql_file_path = os.path.join(base_dir, file_name)
+    try:
+        with open(sql_file_path, 'r') as f:
+            return f.read()
+    except FileNotFoundError:
+        print(f"Error: SQL file not found at {sql_file_path}")
+        raise
+
 # --- Logic for put_user_location ---
 
 def process_location_data(user_id, lat, lon, timestamp):
     """
     Inserts or updates a user's location in the volunteer_locations table.
-    This version uses the correct 'curr_loc', 'prev_loc', and 'updated_at' columns.
-   
     """
-    TABLE_VOL_LOCATIONS = f"{config.SCHEMA}.volunteer_locations"
+    TABLE_VOL_LOCATIONS = config.TABLE_VOL_LOCATIONS
     
-    # This query updates prev_loc with the old curr_loc,
-    # and sets curr_loc to the new coordinates.
     sql = f"""
         INSERT INTO {TABLE_VOL_LOCATIONS} (user_id, curr_loc, updated_at)
         VALUES (%s, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, %s)
         ON CONFLICT (user_id) DO UPDATE
-        SET prev_loc = {TABLE_VOL_LOCATIONS}.curr_loc, -- Move current to previous
-            curr_loc = EXCLUDED.curr_loc,             -- Set new location
+        SET prev_loc = {TABLE_VOL_LOCATIONS}.curr_loc,
+            curr_loc = EXCLUDED.curr_loc,
             updated_at = EXCLUDED.updated_at
         RETURNING user_id;
     """
@@ -41,14 +51,17 @@ def process_location_data(user_id, lat, lon, timestamp):
     try:
         conn = get_db_connection()
         with conn.cursor() as cur:
-            # PostGIS uses (lon, lat) for ST_MakePoint
             cur.execute(sql, (user_id, lon, lat, timestamp))
             conn.commit()
             
             result = cur.fetchone()
             if result:
-                # Return the data that app.py expects
-                return {"user_id": result[0], "latitude": lat, "longitude": lon, "timestamp": timestamp}
+                return {
+                    config.KEY_USER_ID: result[0],
+                    config.KEY_LATITUDE: lat,
+                    config.KEY_LONGITUDE: lon,
+                    config.KEY_TIMESTAMP: timestamp
+                }
             else:
                 raise Exception("Failed to insert or update location")
     finally:
@@ -60,16 +73,13 @@ def process_location_data(user_id, lat, lon, timestamp):
 def get_user_last_location(user_id):
     """
     Retrieves the last known location for a user.
-    This version reads from 'curr_loc' and extracts lat/lon.
-   
     """
-    TABLE_VOL_LOCATIONS = f"{config.SCHEMA}.volunteer_locations"
+    TABLE_VOL_LOCATIONS = config.TABLE_VOL_LOCATIONS
     
-    # ST_Y gets latitude, ST_X gets longitude
     sql = f"""
         SELECT 
-            ST_Y(curr_loc::geometry) AS latitude,
-            ST_X(curr_loc::geometry) AS longitude,
+            ST_Y(curr_loc::geometry) AS {config.KEY_LATITUDE},
+            ST_X(curr_loc::geometry) AS {config.KEY_LONGITUDE},
             updated_at AS last_update_date
         FROM {TABLE_VOL_LOCATIONS} 
         WHERE user_id = %s
@@ -82,7 +92,7 @@ def get_user_last_location(user_id):
             cur.execute(sql, (user_id,))
             location = cur.fetchone()
             if location:
-                location['timestamp'] = location['last_update_date'].isoformat()
+                location[config.KEY_TIMESTAMP] = location['last_update_date'].isoformat()
                 return location
             else:
                 return None
@@ -92,47 +102,22 @@ def get_user_last_location(user_id):
 
 # --- Logic for find_nearest_volunteers ---
 
+# Load the query from the file ONCE when the module is imported
+NEAREST_VOLUNTEER_SQL_TEMPLATE = load_sql_query(config.SQL_FILE_PATH)
+
 def find_nearest_volunteers_postgis(lat, lon, radius_km, limit):
     """
-    Finds nearest volunteers using the correct 'curr_loc' column.
-    ** This version does NOT check for user availability. **
+    Finds nearest volunteers by loading and executing the external SQL file.
     """
-    TABLE_USERS = f"{config.SCHEMA}.users"
-    TABLE_VOL_DETAILS = f"{config.SCHEMA}.volunteer_details"
-    TABLE_VOL_LOCATIONS = f"{config.SCHEMA}.volunteer_locations"
-    
     radius_in_meters = radius_km * 1000
 
-    # This query joins users, volunteer_details, and volunteer_locations.
-    # The join to user_availability has been removed.
-    sql_query = f"""
-        SELECT
-            u.user_id,
-            u.full_name,
-            ST_Y(vl.curr_loc::geometry) AS latitude,
-            ST_X(vl.curr_loc::geometry) AS longitude,
-            ST_Distance(
-                vl.curr_loc::geography, -- Use the correct column
-                ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography
-            ) AS distance_in_meters
-        FROM
-            {TABLE_USERS} AS u
-        JOIN
-            {TABLE_VOL_DETAILS} AS vd ON u.user_id = vd.user_id --
-        JOIN
-            {TABLE_VOL_LOCATIONS} AS vl ON u.user_id = vl.user_id --
-        WHERE
-            -- This is the main search filter
-            ST_DWithin(
-                vl.curr_loc::geography, -- Use the correct column
-                ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography,
-                %s
-            )
-        ORDER BY
-            distance_in_meters ASC
-        LIMIT %s;
-    """
-    # Params: (lon, lat, lon, lat, radius_meters, limit)
+    # Format the SQL query with the correct table names
+    sql_query = NEAREST_VOLUNTEER_SQL_TEMPLATE.format(
+        TABLE_USERS=config.TABLE_USERS,
+        TABLE_VOL_DETAILS=config.TABLE_VOL_DETAILS,
+        TABLE_VOL_LOCATIONS=config.TABLE_VOL_LOCATIONS
+    )
+    
     params = (lon, lat, lon, lat, radius_in_meters, limit)
 
     volunteers_list = []
@@ -145,13 +130,12 @@ def find_nearest_volunteers_postgis(lat, lon, radius_km, limit):
 
             for vol in volunteers:
                 volunteers_list.append({
-                    "user_id": vol['user_id'],
-                    "full_name": vol['full_name'],
-                    "location": {
-                        "latitude": vol['latitude'],
-                        "longitude": vol['longitude']
+                    config.KEY_USER_ID: vol[config.KEY_USER_ID],
+                    config.KEY_LOCATION: {
+                        config.KEY_LATITUDE: vol[config.KEY_LATITUDE],
+                        config.KEY_LONGITUDE: vol[config.KEY_LONGITUDE]
                     },
-                    "distance_km": round(vol['distance_in_meters'] / 1000, 2)
+                    config.KEY_DISTANCE_KM: round(vol['distance_in_meters'] / 1000, 2)
                 })
             return volunteers_list
     finally:
