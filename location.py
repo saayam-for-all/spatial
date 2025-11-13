@@ -1,10 +1,8 @@
 from datetime import datetime, timezone
-from urllib.parse import quote
-import requests
 import psycopg2
 from config import db_config,NOMINATIM_USER_AGENT
 from util import calculate_distance
-
+from sql_file import INSERT_VOLUNTEER_LOCATION, get_geography_point
 
 def process_location_data(user_id, lat, lon, timestamp):
     """
@@ -24,18 +22,17 @@ def process_location_data(user_id, lat, lon, timestamp):
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
-        curr_location = f"SRID=4326;POINT({lon} {lat})"
-        # Use parameterized query to avoid SQL injection
-        insert_query = f"""INSERT INTO virginia_dev_saayam_rdbms.volunteer_locations (
-        user_id, curr_loc)
-        VALUES ( %s,ST_GeogFromText(%s)
-    ); """
-        cursor.execute(insert_query,(user_id, curr_location))
+
+        # Generate geospatial location string using helper
+        curr_location = get_geography_point(lat, lon)
+
+        # Execute insert query from sql_file.py
+        cursor.execute(INSERT_VOLUNTEER_LOCATION, (user_id, curr_location))
         connection.commit()
-        print("✅ Update successful")
+        print("✅ Location update successful")
 
     except Exception as e:
-        print("❌ Error:", e)
+        print("❌ Error while updating location:", e)
 
     finally:
         if cursor:

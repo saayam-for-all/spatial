@@ -46,5 +46,3 @@ def update_Volunteer_Location():
     
     return jsonify({"error": "Invalid data format, must be JSON"}), 400
 
-if __name__ == '__main__':
-    app.run(debug=True)
