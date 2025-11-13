@@ -1,6 +1,11 @@
 # Database configuration
-SQLALCHEMY_DATABASE_URI = 'sqlite:///locations.db'
-SQLALCHEMY_TRACK_MODIFICATIONS = False
+db_config = {
+    host = os.environ['DB_HOST'],
+    port = os.environ['DB_PORT'],
+    dbname = os.environ['DB_NAME'],
+    user = os.environ['DB_USER'],
+    password = os.environ['DB_PASSWORD']
+}
 
 # Tile system configuration
 EARTH_RADIUS_KM = 6371  # Earth's radius in kilometers
