@@ -100,6 +100,7 @@ def get_user_last_location(user_id):
         if conn:
             conn.close()
 
+
 # --- Logic for find_nearest_volunteers ---
 
 # Load the query from the file ONCE when the module is imported
@@ -122,6 +123,7 @@ def find_nearest_volunteers_postgis(lat, lon, radius_km, limit):
 
     volunteers_list = []
     conn = None
+
     try:
         conn = get_db_connection()
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
@@ -129,14 +131,13 @@ def find_nearest_volunteers_postgis(lat, lon, radius_km, limit):
             volunteers = cur.fetchall()
 
             for vol in volunteers:
+                # --- MODIFIED SECTION ---
+                # Only append the user_id to the list
                 volunteers_list.append({
-                    config.KEY_USER_ID: vol[config.KEY_USER_ID],
-                    config.KEY_LOCATION: {
-                        config.KEY_LATITUDE: vol[config.KEY_LATITUDE],
-                        config.KEY_LONGITUDE: vol[config.KEY_LONGITUDE]
-                    },
-                    config.KEY_DISTANCE_KM: round(vol['distance_in_meters'] / 1000, 2)
+                    config.KEY_USER_ID: vol[config.KEY_USER_ID]
                 })
+                # ------------------------
+                
             return volunteers_list
     finally:
         if conn:
