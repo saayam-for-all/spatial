@@ -3,7 +3,7 @@ import psycopg2.extras
 from datetime import datetime, timezone
 import config
 from util import get_location_by_ip, get_location_by_address
-import os # Import os to read the file
+import os 
 
 # --- Database Connection Helper ---
 
@@ -131,12 +131,10 @@ def find_nearest_volunteers_postgis(lat, lon, radius_km, limit):
             volunteers = cur.fetchall()
 
             for vol in volunteers:
-                # --- MODIFIED SECTION ---
                 # Only append the user_id to the list
                 volunteers_list.append({
                     config.KEY_USER_ID: vol[config.KEY_USER_ID]
                 })
-                # ------------------------
                 
             return volunteers_list
     finally:
