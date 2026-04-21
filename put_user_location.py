@@ -1,17 +1,10 @@
 import json
-import os
 import psycopg2
-from datetime import datetime
 from util import lat_lon_to_tile_id, get_location_by_ip, get_location_by_address
+from config import get_db_config
 
 def get_db_connection():
-    return psycopg2.connect(
-        host=os.environ['DB_HOST'],
-        port=os.environ['DB_PORT'],
-        dbname=os.environ['DB_NAME'],
-        user=os.environ['DB_USER'],
-        password=os.environ['DB_PASSWORD']
-    )
+    return psycopg2.connect(**get_db_config())
 
 def lambda_handler(event, context):
     if event['httpMethod'] != 'POST':
