@@ -1,13 +1,15 @@
 # Database configuration
 import os
+from aws_param_store import load_db_config
 
-db_config = {
-    "host": os.environ.get("DB_HOST"),
-    "port": os.environ.get("DB_PORT", "5432"),  # default Postgres port
-    "dbname": os.environ.get("DB_NAME"),
-    "user": os.environ.get("DB_USER"),
-    "password": os.environ.get("DB_PASSWORD"),
-}
+_db_config_cache = None
+
+
+def get_db_config():
+    global _db_config_cache
+    if _db_config_cache is None:
+        _db_config_cache = load_db_config()
+    return _db_config_cache
 # --- Schema & table names ---
 SCHEMA = os.environ.get("DB_SCHEMA", "virginia_dev_saayam_rdbms")
 

@@ -5,7 +5,7 @@ import psycopg2.extras
 import config
 import requests
 
-from config import db_config,NOMINATIM_USER_AGENT
+from config import get_db_config, NOMINATIM_USER_AGENT
 from urllib.parse import quote 
 from util import calculate_distance
 from sql_query import INSERT_VOLUNTEER_LOCATION, get_geography_point
@@ -14,7 +14,7 @@ def get_db_connection():
     """
     Create and return a new PostgreSQL connection using db_config.
     """
-    return psycopg2.connect(**db_config)
+    return psycopg2.connect(**get_db_config())
 
 
 def process_location_data(user_id, lat, lon, timestamp):
@@ -33,7 +33,7 @@ def process_location_data(user_id, lat, lon, timestamp):
     connection = None
     cursor = None
     try:
-        connection = psycopg2.connect(**db_config)
+        connection = psycopg2.connect(**get_db_config())
         cursor = connection.cursor()
 
         # Generate geospatial location string using helper
