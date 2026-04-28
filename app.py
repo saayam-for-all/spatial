@@ -1,12 +1,19 @@
 from flask import Flask, request, jsonify
+from datetime import datetime, timezone
 import config
+print("CONFIG FILE USED:", config.__file__)
+print("DB CONFIG AT STARTUP:", config.db_config)
 import psycopg2
+from flask import request, jsonify
+import psycopg2.extras
 from location import (
     get_location_by_address,
     process_location_data,
     find_nearest_volunteers_postgis, process_location_data,
-    get_location_by_address
+    get_location_by_address, get_db_connection
 )
+from dotenv import load_dotenv
+load_dotenv()
 from config import DEFAULT_RADIUS_KM
 
 # Initialize Flask application
@@ -15,50 +22,85 @@ app.config.from_object(config)
 
 
 # --------------------------------------------------------
-# API — UPDATE USER LOCATION
+# API — UPDATE VOLUNTEER LOCATION
 # --------------------------------------------------------
-
 @app.route('/updateVolunteerLocation', methods=['POST'])
-def update_Volunteer_Location():
+def update_volunteer_location():
     """
-    Process and store user location data.
+    Supports BOTH:
+    1. latitude & longitude (preferred)
+    2. address (fallback)
+    """
+
+    # Validate JSON
+    if not request.is_json:
+        return jsonify({config.KEY_ERROR: config.ERROR_INVALID_JSON}), 400
+
+    data = request.get_json()
+
+    user_id = data.get('user_id')
+    lat = data.get('latitude')
+    lon = data.get('longitude')
+    address = data.get('address')
+
+    # Validate user_id
+    if not user_id:
+        return jsonify({config.KEY_ERROR: config.ERROR_USER_ID_REQUIRED}), 400
     
-    Expected JSON payload:
-    {
-        "user_id": string,
-        "address": string,
-        "use_current_location": bool
-    }
-    """
-    if request.is_json:
-        data = request.get_json()
-        user_id = data.get('user_id')
-        address = data.get('address')
-        use_current_location = data.get('use_current_location', False)
+    # Default timestamp (always set)
+    timestamp = datetime.now(timezone.utc)
+
+    # --------------------------------------------------------
+    # PRIORITY 1: GPS (latitude & longitude)
+    # --------------------------------------------------------
+    if lat is not None and lon is not None:
+
+        # Validate type
+        if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
+            return jsonify({config.KEY_ERROR: config.ERROR_INVALID_LAT_LON_TYPE}), 400
+
+        # Validate range
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            return jsonify({config.KEY_ERROR: config.ERROR_INVALID_COORDINATES}), 400
         
-        lat, lon, timestamp = get_location_by_address(address)
+
+    # --------------------------------------------------------
+    # PRIORITY 2: Address fallback
+    # --------------------------------------------------------
+    elif address:
+        lat, lon, _ = get_location_by_address(address)
 
         if lat is None or lon is None:
-            return jsonify({"error": "Unable to determine location"}), 400
+            return jsonify({config.KEY_ERROR: config.ERROR_LOCATION_UNDETERMINED}), 400
 
-        try:
-            processed_data = process_location_data(
-                user_id, lat, lon, timestamp
-            )
-            return jsonify({
-                "message": "Location data processed",
-                "data": processed_data
-            }), 200
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-    
-    return jsonify({"error": "Invalid data format, must be JSON"}), 400
+    # --------------------------------------------------------
+    # INVALID INPUT
+    # --------------------------------------------------------
+    else:
+        return jsonify({config.KEY_ERROR: config.ERROR_LAT_LON_REQUIRED}), 400
+
+    # --------------------------------------------------------
+    # STORE LOCATION
+    # --------------------------------------------------------
+    try:
+        processed_data = process_location_data(user_id, lat, lon, timestamp)
+
+        return jsonify({
+            config.KEY_MESSAGE: "Location updated successfully",
+            config.KEY_DATA: processed_data
+        }), 200
+
+    except Exception as e:
+        print(f"Error updating location: {e}")
+        return jsonify({config.KEY_ERROR: config.ERROR_LOCATION_PROCESS_FAILED}), 500
+
+
 
 
 # --------------------------------------------------------
 # API — FIND NEAREST VOLUNTEERS
 # --------------------------------------------------------
-@app.route('/nearest_volunteers', methods=['POST'])
+@app.route('/findNearbyVolunteers', methods=['POST'])
 def find_nearest_volunteers():
     """
     Find nearest available volunteers using PostGIS.
@@ -118,8 +160,37 @@ def find_nearest_volunteers():
         print(f"Error finding volunteers: {e}")
         return jsonify({config.KEY_ERROR: config.ERROR_VOLUNTEERS_FIND_FAILED}), 500
 
+# --------------------------------------------------------
+# API — GET VOLUNTEER LOCATION
+# --------------------------------------------------------
+from get_volunteer_location import get_latest_location_from_db
+
+@app.route('/getVolunteerLocation', methods=['GET'])
+def get_volunteer_location():
+    user_id = request.args.get('user_id')
+
+    if not user_id:
+        return jsonify({
+            config.KEY_ERROR: "SAAYAM-10004: user_id is required."
+        }), 400
+
+    try:
+        result = get_latest_location_from_db(user_id)
+
+        if not result:
+            return jsonify({
+                config.KEY_ERROR: config.ERROR_LOCATION_NOT_FOUND
+            }), 404
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        print(f"Error fetching volunteer location: {e}")
+        return jsonify({
+            config.KEY_ERROR: config.ERROR_LOCATION_GET_FAILED
+        }), 500
+    
 if __name__ == '__main__':
     app.run(debug=True)
-
 
 

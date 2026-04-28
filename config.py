@@ -1,6 +1,7 @@
 # Database configuration
 import os
 
+
 db_config = {
     "host": os.environ.get("DB_HOST"),
     "port": os.environ.get("DB_PORT", "5432"),  # default Postgres port
@@ -95,6 +96,24 @@ ERROR_LOCATION_NOT_FOUND = (
     "The requested user_id does not have a location in our records. "
     "Please ensure the user_id is correct or update the user's location first."
 )
+
+ERROR_INVALID_LAT_LON_TYPE = (
+    "SAAYAM-10006: Invalid coordinate type. "
+    "Latitude and longitude must be numeric values. "
+    "Please provide valid numbers."
+)
+
+ERROR_INVALID_COORDINATES = (
+    "SAAYAM-10007: Invalid coordinate range. "
+    "Latitude must be between -90 and 90 and longitude between -180 and 180. "
+    "Please provide valid GPS coordinates."
+)
+
+ERROR_MISSING_LOCATION_INPUT = (
+    "SAAYAM-10008: Missing location input. "
+    "Provide either latitude/longitude or a valid address."
+)
+
 
 # --- Server Error Messages (5xx) ---
 ERROR_LOCATION_PROCESS_FAILED = (

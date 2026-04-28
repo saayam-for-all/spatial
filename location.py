@@ -10,12 +10,15 @@ from urllib.parse import quote
 from util import calculate_distance
 from sql_query import INSERT_VOLUNTEER_LOCATION, get_geography_point
 
-def get_db_connection():
-    """
-    Create and return a new PostgreSQL connection using db_config.
-    """
-    return psycopg2.connect(**db_config)
+# def get_db_connection():
+#     """
+#     Create and return a new PostgreSQL connection using db_config.
+#     """
+#     return psycopg2.connect(**db_config)
 
+def get_db_connection():
+    print("DEBUG DB CONFIG:", db_config)
+    return psycopg2.connect(**db_config)
 
 def process_location_data(user_id, lat, lon, timestamp):
     """
@@ -42,10 +45,10 @@ def process_location_data(user_id, lat, lon, timestamp):
         # Execute insert query from sql_file.py
         cursor.execute(INSERT_VOLUNTEER_LOCATION, (user_id, curr_location))
         connection.commit()
-        print("✅ Location update successful")
+        print("Location update successful")
 
     except Exception as e:
-        print("❌ Error while updating location:", e)
+        print(" Error while updating location:", e)
 
     finally:
         if cursor:
@@ -142,3 +145,7 @@ def find_nearest_volunteers_postgis(lat, lon, radius_km, limit):
     finally:
         if conn:
             conn.close()
+
+
+
+
