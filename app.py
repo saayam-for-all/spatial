@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from datetime import datetime, timezone
 import config
 print("CONFIG FILE USED:", config.__file__)
-print("DB CONFIG AT STARTUP:", config.db_config)
+print("DB CONFIG AT STARTUP:", config.get_db_config)
 import psycopg2
 from flask import request, jsonify
 import psycopg2.extras
@@ -12,8 +12,8 @@ from location import (
     find_nearest_volunteers_postgis, process_location_data,
     get_location_by_address, get_db_connection
 )
-from dotenv import load_dotenv
-load_dotenv()
+"""from dotenv import load_dotenv
+load_dotenv()"""
 from config import DEFAULT_RADIUS_KM
 
 # Initialize Flask application
