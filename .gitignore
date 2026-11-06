@@ -14,3 +14,11 @@ env/
 *.pyc
 *.pyo
 *.pyd
+# Local virtual environments
+.venv/
+.venv-*/
+
+# Test artifacts
+.pytest_cache/
+failure-details.txt
+test-app-results.txt
