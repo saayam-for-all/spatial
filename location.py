@@ -22,38 +22,44 @@ def get_db_connection():
 def process_location_data(user_id, lat, lon, timestamp):
     """
     Process and store user location data in the database.
-    
+
     Args:
         user_id: Unique identifier for the user (string)
         lat: Latitude coordinate (float)
         lon: Longitude coordinate (float)
         timestamp: Time of location update
-        
+
     Returns:
         dict: Contains processed location data
+
+    Raises:
+        Exception: re-raised if the database write fails, after rollback.
     """
     connection = None
     cursor = None
     try:
-        connection = psycopg2.connect(**db_config)
+        connection = get_db_connection()
         cursor = connection.cursor()
 
         # Generate geospatial location string using helper
         curr_location = get_geography_point(lat, lon)
 
-        # Execute insert query from sql_file.py
+        # Execute insert query from sql_query.py
         cursor.execute(INSERT_VOLUNTEER_LOCATION, (user_id, curr_location))
         connection.commit()
-        print("Location update successful")
 
     except Exception as e:
-        print(" Error while updating location:", e)
+        if connection:
+            connection.rollback()
+        print(f"Error while updating location: {type(e).__name__}: {e}")
+        raise
 
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
+
     return {
         "latitude": lat,
         "longitude": lon
