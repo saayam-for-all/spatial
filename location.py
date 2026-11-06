@@ -38,7 +38,7 @@ def process_location_data(user_id, lat, lon, timestamp):
     connection = None
     cursor = None
     try:
-        connection = psycopg2.connect(**db_config)
+        connection = get_db_connection()
         cursor = connection.cursor()
 
         # Generate geospatial location string using helper
