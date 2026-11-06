@@ -1,8 +1,6 @@
 from flask import Flask, request, jsonify
 from datetime import datetime, timezone
 import config
-print("CONFIG FILE USED:", config.__file__)
-print("DB CONFIG AT STARTUP:", config.db_config)
 import psycopg2
 from flask import request, jsonify
 import psycopg2.extras

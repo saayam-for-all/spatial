@@ -17,7 +17,6 @@ from sql_query import INSERT_VOLUNTEER_LOCATION, get_geography_point
 #     return psycopg2.connect(**db_config)
 
 def get_db_connection():
-    print("DEBUG DB CONFIG:", db_config)
     return psycopg2.connect(**db_config)
 
 def process_location_data(user_id, lat, lon, timestamp):
