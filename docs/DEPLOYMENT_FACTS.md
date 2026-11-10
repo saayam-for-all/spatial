@@ -31,7 +31,7 @@ See also: [`docs/BRANCHES.md`](./BRANCHES.md).
 
 ## 2. Lambda handlers in this repository
 
-CodeGraph / source inventory of every `lambda_handler` in the repo:
+Source inventory of every `lambda_handler` in the repo:
 
 | # | File | Handler string (typical) | What it does | Likely status |
 | --- | --- | --- | --- | --- |
