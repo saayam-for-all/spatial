@@ -1,8 +1,8 @@
 # Spatial — Branch policy (`test` / `dev` / `main`)
 
-**Decision owner:** Sugandha (2026-11-10)  
-**Repo Lead (merge to `dev` / `main`):** @Tanmay-Godse  
-**Wiki:** Mirror this page on the [spatial wiki](https://github.com/saayam-for-all/spatial/wiki) once AWS inventory (SP-W1-002) is further along.
+**Decision recorded:** [#47](https://github.com/saayam-for-all/spatial/issues/47) (2026-11-10)  
+**Team Lead (merge to `dev` / `main`):** @Tanmay-Godse  
+**Wiki:** Mirror this page on the [spatial wiki](https://github.com/saayam-for-all/spatial/wiki) after the AWS inventory (SP-W1-002) is further along.
 
 ---
 
@@ -10,48 +10,48 @@
 
 | Branch | Role | Who writes | Who merges |
 | --- | --- | --- | --- |
-| **`test`** | **Default branch.** Day-to-day integration line for the Spatial sprint and ongoing work. | Engineers (feature / fix / docs / ci branches) | Peer review + Lead for P0 |
-| **`dev`** | Stabilized integration line. Lead promotes from `test` when a set of changes is ready. | Lead (merge from `test`) | Lead only |
-| **`main`** | Release / protected line. Currently thin (README + LICENSE historically). Lead promotes when appropriate. | Lead (merge from `dev` or agreed cut) | Lead only |
+| **`test`** | **Default branch.** Day-to-day integration line for ongoing Spatial work. | Engineers (feature / fix / docs / ci branches) | Peer review; Team Lead approval for P0 |
+| **`dev`** | Stabilized integration line. Team Lead promotes from `test` when a set of changes is ready. | Team Lead (merge from `test`) | Team Lead only |
+| **`main`** | Release / protected line. Historically thin (README and LICENSE). Team Lead promotes when appropriate. | Team Lead (merge from `dev` or an agreed cut) | Team Lead only |
 
 ---
 
 ## Engineer workflow
 
 1. `git fetch origin && git switch test && git pull`
-2. Branch: `fix/SP-…`, `feature/SP-…`, `docs/SP-…`, or `ci/SP-…`
-3. Open PR **into `test`**
-4. Do **not** open routine PRs into `dev` or `main` unless Lead asks
+2. Create a branch: `fix/SP-…`, `feature/SP-…`, `docs/SP-…`, or `ci/SP-…`
+3. Open a pull request **into `test`**
+4. Do **not** open routine pull requests into `dev` or `main` unless the Team Lead asks
 
-### After 2026-11-06 note (superseded)
+### Earlier sprint note (superseded)
 
-Earlier sprint guidance said “branch only from `dev` after SP-W1-004.” **That is superseded.** Per admin: stay on **`test`** as the default integration branch; Lead owns promotion to `dev` / `main`.
+Earlier guidance said “branch only from `dev` after SP-W1-004.” **That guidance is superseded.** Per organization decision on [#47](https://github.com/saayam-for-all/spatial/issues/47): use **`test`** as the default integration branch; the Team Lead owns promotion to `dev` and `main`.
 
 ---
 
-## Lead promotion checklist
+## Team Lead promotion checklist
 
 When promoting `test` → `dev` (or `dev` → `main`):
 
-- [ ] P0 fixes included (secrets, data integrity, etc.)
+- [ ] P0 fixes included (secrets, data integrity, and related)
 - [ ] Tests green locally (and CI once SP-W1-012 lands)
-- [ ] `docs/DEPLOYMENT_FACTS.md` still accurate for anything deploy-related
+- [ ] [`docs/DEPLOYMENT_FACTS.md`](./DEPLOYMENT_FACTS.md) still accurate for deploy-related facts
 - [ ] Wiki updated if branch roles or deploy targets changed
-- [ ] Announce to the team which SHAs landed on `dev` / `main`
+- [ ] Team notified which commits landed on `dev` / `main`
 
 ---
 
 ## Alignment status (as of 2026-11-10)
 
-| Branch | Notable content | Gap |
+| Branch | Notable content | Notes |
 | --- | --- | --- |
-| `test` | #43 secret-print removal, #44 test deps; this PR also syncs #45 (SP-W1-006) | Was missing SP-W1-006 until this PR |
-| `dev` | #48 baseline from `test` + #45 write-failure fix | Ahead of `test` before this sync |
-| `main` | README / LICENSE heavy historically | Needs deliberate Lead promotion later — do not dump sprint WIP |
+| `test` | #43 secret-print removal, #44 test dependencies, #49 baseline doc, #50 deployment docs; SP-W1-006 write-failure fix applied via #50 | Default working branch |
+| `dev` | #48 baseline from `test`, plus #45 write-failure fix | Stabilized line; Lead-managed |
+| `main` | Historically README / LICENSE focused | Needs deliberate Lead promotion later — do not merge unfinished sprint work |
 
 ---
 
 ## Related
 
 - [`docs/DEPLOYMENT_FACTS.md`](./DEPLOYMENT_FACTS.md) — AWS / Lambda / Cognito / SSM facts  
-- Sprint plan (local): `spatial-engineering-plan/SPATIAL_MASTER_EXECUTION_PLAN.md`
+- Tracking issue: [#47](https://github.com/saayam-for-all/spatial/issues/47)
