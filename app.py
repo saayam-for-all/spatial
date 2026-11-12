@@ -169,7 +169,7 @@ def get_volunteer_location():
 
     if not user_id:
         return jsonify({
-            config.KEY_ERROR: "SAAYAM-10004: user_id is required."
+            config.KEY_ERROR: config.ERROR_USER_ID_REQUIRED
         }), 400
 
     try:
