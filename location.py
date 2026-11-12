@@ -8,7 +8,7 @@ import requests
 from config import db_config,NOMINATIM_USER_AGENT
 from urllib.parse import quote 
 from util import calculate_distance
-from sql_query import INSERT_VOLUNTEER_LOCATION, get_geography_point
+from sql_query import build_insert_volunteer_location_sql, get_geography_point
 
 # def get_db_connection():
 #     """
@@ -33,19 +33,23 @@ def process_location_data(user_id, lat, lon, timestamp):
         dict: Contains processed location data
 
     Raises:
+        ValueError: DB_SCHEMA is not a single safe PostgreSQL identifier.
+            Raised before a connection is opened.
         Exception: re-raised if the database write fails, after rollback.
     """
     connection = None
     cursor = None
     try:
+        # Schema is validated here, before a connection is opened.
+        insert_sql = build_insert_volunteer_location_sql(config.SCHEMA)
         connection = get_db_connection()
         cursor = connection.cursor()
 
         # Generate geospatial location string using helper
         curr_location = get_geography_point(lat, lon)
 
-        # Execute insert query from sql_query.py
-        cursor.execute(INSERT_VOLUNTEER_LOCATION, (user_id, curr_location))
+        # user_id and curr_location are bound parameters, not SQL text.
+        cursor.execute(insert_sql, (user_id, curr_location))
         connection.commit()
 
     except Exception as e:
