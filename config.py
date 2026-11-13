@@ -133,3 +133,6 @@ ERROR_VOLUNTEERS_FIND_FAILED = (
     "An internal server error occurred while querying for volunteers. "
     "Please contact the backend team if this error persists."
 )
+
+# --- Geocoder ---
+GEOCODER_TIMEOUT_SECONDS = 5

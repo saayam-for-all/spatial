@@ -76,11 +76,16 @@ def get_location_by_address(address):
     Returns:
         tuple: (latitude, longitude, timestamp)
     """
-    encoded_address = quote(address)
-    url = f"https://nominatim.openstreetmap.org/search?q={encoded_address}&format=json"
-    headers = {'User-Agent': NOMINATIM_USER_AGENT}
+    if not address or not isinstance(address, str):
+        return None, None, None
+
     try:
-        response = requests.get(url, headers=headers)
+        encoded_address = quote(address)
+        url = f"https://nominatim.openstreetmap.org/search?q={encoded_address}&format=json"
+        headers = {'User-Agent': NOMINATIM_USER_AGENT}
+        response = requests.get(
+            url, headers=headers, timeout=config.GEOCODER_TIMEOUT_SECONDS
+        )
         response.raise_for_status()
         data = response.json()
         if data and isinstance(data, list) and len(data) > 0:
