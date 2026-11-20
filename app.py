@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+import math
 from datetime import datetime, timezone
 import config
 import psycopg2
@@ -17,6 +18,15 @@ from config import DEFAULT_RADIUS_KM
 # Initialize Flask application
 app = Flask(__name__)
 app.config.from_object(config)
+
+
+def _is_number(value):
+    """True for finite int/float. Booleans are rejected (bool is an int subclass)."""
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+    )
 
 
 # --------------------------------------------------------
@@ -108,11 +118,37 @@ def find_nearest_volunteers():
         return jsonify({config.KEY_ERROR: config.ERROR_INVALID_JSON}), 400
         
     data = request.get_json()
+    if not isinstance(data, dict):
+        return jsonify({config.KEY_ERROR: config.ERROR_INVALID_JSON}), 400
+
     lat = data.get(config.KEY_LATITUDE)
     lon = data.get(config.KEY_LONGITUDE)
     
     if lat is None or lon is None:
         return jsonify({config.KEY_ERROR: config.ERROR_LAT_LON_REQUIRED}), 400
+
+    # Validate coordinates (type, then range)
+    if not _is_number(lat) or not _is_number(lon):
+        return jsonify({config.KEY_ERROR: config.ERROR_INVALID_LAT_LON_TYPE}), 400
+    if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+        return jsonify({config.KEY_ERROR: config.ERROR_INVALID_COORDINATES}), 400
+
+    # Validate unit (only km / miles)
+    input_unit = data.get(config.KEY_UNIT, config.UNIT_KM)
+    if not isinstance(input_unit, str) or input_unit.lower() not in (
+        config.UNIT_KM, config.UNIT_MILES
+    ):
+        return jsonify({config.KEY_ERROR: config.ERROR_INVALID_UNIT}), 400
+    input_unit = input_unit.lower()
+
+    # Validate limit (integer, 1..MAX_SEARCH_LIMIT)
+    limit = data.get('limit', config.DEFAULT_LIMIT)
+    if (
+        not isinstance(limit, int)
+        or isinstance(limit, bool)
+        or not (1 <= limit <= config.MAX_SEARCH_LIMIT)
+    ):
+        return jsonify({config.KEY_ERROR: config.ERROR_INVALID_LIMIT}), 400
 
     try:
         # Check for the calamity flag
@@ -128,11 +164,14 @@ def find_nearest_volunteers():
             
             # 1. Check for generic 'radius' and 'unit' (New Standard)
             input_radius = data.get(config.KEY_RADIUS)
-            input_unit = data.get(config.KEY_UNIT, config.UNIT_KM).lower() # Default to KM
             
             # 2. Check for specific 'radius_km' (Backward Compatibility)
             # If 'radius_km' is explicitly sent, it takes precedence over the generic 'radius'
             legacy_radius_km = data.get('radius_km')
+
+            raw_radius = legacy_radius_km if legacy_radius_km is not None else input_radius
+            if raw_radius is not None and not _is_number(raw_radius):
+                return jsonify({config.KEY_ERROR: config.ERROR_INVALID_RADIUS}), 400
 
             if legacy_radius_km is not None:
                 final_radius_km = legacy_radius_km
@@ -147,8 +186,13 @@ def find_nearest_volunteers():
             
             # -----------------------------------
 
-        limit = data.get('limit', config.DEFAULT_LIMIT)
-        
+        # Validate the effective radius (after unit conversion), in km
+        if (
+            not _is_number(final_radius_km)
+            or not (config.MIN_SEARCH_RADIUS_KM < final_radius_km <= config.MAX_SEARCH_RADIUS_KM)
+        ):
+            return jsonify({config.KEY_ERROR: config.ERROR_INVALID_RADIUS}), 400
+
         # The database function expects KM, so we pass the converted value
         volunteers = find_nearest_volunteers_postgis(lat, lon, final_radius_km, limit)
         
