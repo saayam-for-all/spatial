@@ -115,6 +115,27 @@ ERROR_MISSING_LOCATION_INPUT = (
 )
 
 
+# NOTE: codes 10009-10011 and MAX_SEARCH_LIMIT are PROPOSED (SP-W2-002),
+# pending Team Lead approval.
+ERROR_INVALID_RADIUS = (
+    "SAAYAM-10009: Invalid search radius. "
+    "The radius must be a number greater than 0 and no more than 1000 km. "
+    "Please provide a valid radius."
+)
+
+ERROR_INVALID_LIMIT = (
+    "SAAYAM-10010: Invalid limit. "
+    "The 'limit' must be a whole number between 1 and 50. "
+    "Please provide a valid limit."
+)
+
+ERROR_INVALID_UNIT = (
+    "SAAYAM-10011: Invalid unit. "
+    "The 'unit' must be either 'km' or 'miles'. "
+    "Please provide a valid unit."
+)
+
+
 # --- Server Error Messages (5xx) ---
 ERROR_LOCATION_PROCESS_FAILED = (
     "SAAYAM-10500: Failed to process location. "
@@ -133,3 +154,6 @@ ERROR_VOLUNTEERS_FIND_FAILED = (
     "An internal server error occurred while querying for volunteers. "
     "Please contact the backend team if this error persists."
 )
+
+# Maximum number of volunteers a single search may request (proposed; Lead to approve)
+MAX_SEARCH_LIMIT = 50
