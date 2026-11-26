@@ -22,3 +22,9 @@ env/
 .pytest_cache/
 failure-details.txt
 test-app-results.txt
+
+# Local environment variables
+.env
+.idea/
+
+__pycache__/
