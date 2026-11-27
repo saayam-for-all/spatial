@@ -32,4 +32,4 @@ jobs:
       # failure is tracked separately under SP-W2-005.
       - name: Run unit tests
         run: |
-          python -m pytest test_app.py test_api_security.py test_location_write.py -v -m "not integration"
+          python -m pytest test_app.py test_api_security.py test_location_write.py test_contract_webapp.py -v -m "not integration"
